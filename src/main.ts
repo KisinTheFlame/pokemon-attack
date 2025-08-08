@@ -11,6 +11,13 @@ async function main() {
     // TODO: 实现 LLM Agent 决策系统
     // TODO: 实现游戏状态识别
 
+    console.log("📸 mGBA 控制器可用:");
+    console.log("  - const { MGBAController } = require('./mgba_controller');");
+    console.log("  - const controller = new MGBAController();");
+    console.log("  - await controller.connect();");
+    console.log("  - const screenshot = await controller.captureScreen('./screenshot.png');");
+    console.log("  - controller.disconnect();");
+
     console.log("🚀 项目初始化完成！");
 }
 
