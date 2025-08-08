@@ -1,0 +1,30 @@
+{
+    "name": "pokemon-attack",
+    "version": "1.0.0",
+    "description": "让 LLM Agent 自主学习玩《宝可梦 绿宝石》",
+    "keywords": [
+        "llm"
+    ],
+    "homepage": "https://github.com/KisinTheFlame/pokemon-attack#readme",
+    "bugs": {
+        "url": "https://github.com/KisinTheFlame/pokemon-attack/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/KisinTheFlame/pokemon-attack.git"
+    },
+    "author": "Kisin Wen",
+    "type": "module",
+    "main": "src/index.ts",
+    "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^24.2.0",
+        "tsx": "^4.20.3",
+        "typescript": "^5.9.2"
+    }
+}
