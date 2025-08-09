@@ -22,7 +22,7 @@ export function loadConfig(): Config {
     const configContent = fs.readFileSync(configFile, "utf8");
     const config = yaml.parse(configContent) as Config;
   
-    if (!config.llm?.api_key || !config.llm?.base_url || !config.llm?.model) {
+    if (!config.llm.api_key || !config.llm.base_url || !config.llm.model) {
         throw new Error("配置文件缺少必要的 LLM 配置项");
     }
   

@@ -10,9 +10,9 @@ export class MgbaClient {
     private socket: net.Socket;
     private host: string;
     private port: number;
-    private isConnected: boolean = false;
+    private isConnected = false;
 
-    constructor(host: string = "localhost", port: number = 8888) {
+    constructor(host = "localhost", port = 8888) {
         this.host = host;
         this.port = port;
         this.socket = new net.Socket();
@@ -28,7 +28,7 @@ export class MgbaClient {
                 resolve();
             });
 
-            this.socket.on("error", (error) => {
+            this.socket.on("error", error => {
                 this.isConnected = false;
                 reject(error);
             });
@@ -39,7 +39,7 @@ export class MgbaClient {
      * 断开连接
      */
     disconnect(): void {
-        if (this.socket && !this.socket.destroyed) {
+        if (!this.socket.destroyed) {
             this.socket.destroy();
         }
         this.isConnected = false;

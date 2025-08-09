@@ -21,7 +21,7 @@ const GBA_KEY_CODES: Record<GbaKey, number> = {
  * @param key 按键名称
  * @param duration 持续时间（毫秒），默认 10ms
  */
-export async function pressKey(key: GbaKey, duration: number = 10): Promise<void> {
+export async function pressKey(key: GbaKey, duration = 10): Promise<void> {
     const keyCode = GBA_KEY_CODES[key];
 
     // 按下按键（新连接）
@@ -56,7 +56,7 @@ export async function screenshot(): Promise<Buffer> {
     const tempPath = path.join(
         process.cwd(),
         "screenshots",
-        `capture_${Date.now()}.png`,
+        `capture_${Date.now().toString()}.png`,
     );
 
     try {

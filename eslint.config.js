@@ -1,34 +1,36 @@
 import globals from "globals";
-import js from "@eslint/js";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 import stylistic from "@stylistic/eslint-plugin";
 
-export default [
+export default tseslint.config(
     // Global ignores
     {
         ignores: ["dist/**", "node_modules/**"],
     },
 
-    // Base JavaScript config
-    js.configs.recommended,
+    // Base configs
+    eslint.configs.recommended,
+    ...tseslint.configs.strictTypeChecked,
+    ...tseslint.configs.stylisticTypeChecked,
 
-    // TypeScript files
+    // Project-specific configuration
     {
         files: ["src/**/*.{ts,tsx}"],
         languageOptions: {
-            parser: tsparser,
             globals: {
                 ...globals.node,
             },
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
         },
         plugins: {
-            "@typescript-eslint": tseslint,
             "@stylistic": stylistic,
         },
         rules: {
             // TypeScript rules
-            ...tseslint.configs.recommended.rules,
             "@typescript-eslint/no-unused-vars": [
                 "error",
                 { argsIgnorePattern: "^_" },
@@ -44,6 +46,7 @@ export default [
             "@stylistic/object-curly-spacing": ["error", "always"],
             "@stylistic/array-bracket-spacing": ["error", "never"],
             "@stylistic/eol-last": ["error", "always"],
+            "@stylistic/arrow-parens": ["error", "as-needed"],
 
             // General rules
             "no-console": "off",
@@ -51,4 +54,4 @@ export default [
             "no-var": "error",
         },
     },
-];
+);
