@@ -1,8 +1,8 @@
-# 游戏按键输入功能实现文档
+# mGBA 集成功能实现文档
 
 ## 概述
 
-通过 mGBA 模拟器的 Lua 脚本 API 与 Node.js TCP Socket 通信，实现游戏按键输入功能。
+通过 mGBA 模拟器的 Lua 脚本 API 与 Node.js TCP Socket 通信，实现游戏画面捕获和按键输入功能。
 
 ## 架构
 
@@ -15,26 +15,61 @@ Node.js (MgbaClient) ↔ TCP Socket ↔ mGBA Lua Server ↔ 模拟器核心
 ### mGBA Lua 服务端 (`scripts/mgba_server.lua`)
 - 监听 TCP 端口 8888
 - 解析二进制协议请求
-- 调用 `emu:addKeys()` 和 `emu:clearKeys()` API
+- 调用 `emu:screenshot()` API 进行截图
+- 调用 `emu:addKeys()` 和 `emu:clearKeys()` API 进行按键输入
 - 使用帧回调控制按键持续时间
 - 返回操作状态
 
 ### MgbaClient (`src/mgba_client.ts`)
 - TCP 连接管理
 - 二进制协议编解码
+- 截图请求处理流程
 - 按键输入请求处理流程
 - 错误处理
 
-### pressKey 函数 (`src/gba.ts`)
-- 对 MgbaClient 的封装
-- 自动连接管理
+### 封装接口 (`src/gba.ts`)
+- `screenshot()` 函数：对 MgbaClient 的截图功能封装，自动连接管理和文件路径生成
+- `pressKey()` 函数：对 MgbaClient 的按键功能封装，自动连接管理，固定 1 帧持续时间
 - TypeScript 类型安全
-- 固定 1 帧持续时间
+- 资源清理
 
 ## 通信协议
 
 ### 数据类型
 - **整数**: 4字节有符号整数，大端序 (big-endian)
+- **字符串**: 4字节长度 + UTF-8 字符串内容
+
+### 截图操作
+
+**请求格式**:
+```
+[操作码: 4字节] [路径长度: 4字节] [文件路径: 变长字符串]
+```
+
+**请求示例**:
+```
+操作码: 0x00000001 (截图)
+路径长度: 0x0000000F (15字节)
+文件路径: "./screenshot.png"
+```
+
+**响应格式**:
+```
+[状态码: 4字节] [错误信息长度: 4字节] [错误信息: 变长字符串]
+```
+
+**成功响应**:
+```
+状态码: 0x00000000 (成功)
+无后续数据
+```
+
+**失败响应**:
+```
+状态码: 0x00000001 (失败)
+错误信息长度: 0x00000014 (20字节)
+错误信息: "Screenshot failed: xxx"
+```
 
 ### 按键输入操作
 
@@ -83,7 +118,17 @@ Node.js (MgbaClient) ↔ TCP Socket ↔ mGBA Lua Server ↔ 模拟器核心
 | R        | 8      | 0x0100   |
 | L        | 9      | 0x0200   |
 
-### 交换流程
+## 交换流程
+
+### 截图流程
+1. 客户端连接到服务器端口 8888
+2. 客户端发送截图请求 (操作码1 + 文件路径)
+3. 服务器调用 `emu:screenshot()` 保存截图
+4. 服务器返回操作状态
+5. 客户端读取保存的截图文件
+6. 连接关闭
+
+### 按键输入流程
 1. 客户端连接到服务器端口 8888
 2. 客户端发送按键请求 (操作码2 + 按键码 + 帧数)
 3. 服务器调用 `emu:addKeys()` 按下按键
@@ -93,6 +138,11 @@ Node.js (MgbaClient) ↔ TCP Socket ↔ mGBA Lua Server ↔ 模拟器核心
 
 ## 使用接口
 
+### 截图功能
+- `MgbaClient`: 需要手动管理连接，支持连接复用
+- `screenshot()`: 自动管理连接，单次调用
+
+### 按键输入功能
 - `MgbaClient.pressKey()`: 需要手动管理连接，支持自定义帧数
 - `pressKey()`: 自动管理连接，固定 1 帧持续时间
 
@@ -111,7 +161,8 @@ const GBA_KEY_CODES: Record<GbaKey, number> = {
 ## 文件
 
 ```
-src/mgba_client.ts    # 核心客户端 (新增 pressKey 方法)
-src/gba.ts           # 封装接口 (新增 pressKey 函数和类型)
-scripts/mgba_server.lua # Lua 服务端 (新增按键处理逻辑)
+src/mgba_client.ts       # 核心客户端 (包含截图和按键输入方法)
+src/gba.ts              # 封装接口 (包含 screenshot 和 pressKey 函数)
+scripts/mgba_server.lua  # Lua 服务端 (包含截图和按键处理逻辑)
+screenshots/            # 截图存储目录
 ```
