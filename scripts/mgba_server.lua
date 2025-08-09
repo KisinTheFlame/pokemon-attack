@@ -42,7 +42,55 @@ local function sendError(socket, error_msg)
     sendResponse(socket, 1, error_msg)
 end
 
+-- 按键码到名称的映射
+local KEY_NAMES = {
+    [0] = "A",
+    [1] = "B",
+    [2] = "SELECT",
+    [3] = "START",
+    [4] = "RIGHT",
+    [5] = "LEFT",
+    [6] = "UP",
+    [7] = "DOWN",
+    [8] = "R",
+    [9] = "L"
+}
+
 -- 业务逻辑函数
+local function handleAddKey(socket, keyCode)
+    local keyName = KEY_NAMES[keyCode] or "UNKNOWN"
+    console:log("Attempting to add key: " .. keyName .. " (" .. keyCode .. ")")
+    
+    local success, result = pcall(function()
+        emu:addKey(keyCode)
+    end)
+    
+    if success then
+        console:log("Add key successful: " .. keyName)
+        sendResponse(socket, 0)
+    else
+        console:error("Add key failed: " .. keyName .. " - " .. tostring(result))
+        sendError(socket, "Add key failed: " .. tostring(result))
+    end
+end
+
+local function handleClearKey(socket, keyCode)
+    local keyName = KEY_NAMES[keyCode] or "UNKNOWN"
+    console:log("Attempting to clear key: " .. keyName .. " (" .. keyCode .. ")")
+    
+    local success, result = pcall(function()
+        emu:clearKey(keyCode)
+    end)
+    
+    if success then
+        console:log("Clear key successful: " .. keyName)
+        sendResponse(socket, 0)
+    else
+        console:error("Clear key failed: " .. keyName .. " - " .. tostring(result))
+        sendError(socket, "Clear key failed: " .. tostring(result))
+    end
+end
+
 local function handleScreenshot(socket, filepath)
     console:log("Attempting to take screenshot: " .. filepath)
     local success, result = pcall(function()
@@ -70,12 +118,26 @@ local function handleConnection(socket)
         else
             sendError(socket, "Invalid filepath")
         end
+    elseif opcode == 2 then -- 按下按键操作
+        local keyCode = receiveInt32(socket)
+        if keyCode then
+            handleAddKey(socket, keyCode)
+        else
+            sendError(socket, "Invalid key code")
+        end
+    elseif opcode == 3 then -- 释放按键操作
+        local keyCode = receiveInt32(socket)
+        if keyCode then
+            handleClearKey(socket, keyCode)
+        else
+            sendError(socket, "Invalid key code")
+        end
     else
         sendError(socket, "Unknown operation code")
     end
 end
 
-server = nil
+local server = nil
 
 -- 服务器主循环
 local function startServer(port)

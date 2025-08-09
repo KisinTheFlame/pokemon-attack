@@ -46,6 +46,50 @@ export class MgbaClient {
     }
 
     /**
+     * 按下按键
+     * @param keyCode 按键码
+     */
+    async addKey(keyCode: number): Promise<void> {
+        if (!this.isConnected) {
+            throw new Error("Not connected to mGBA server");
+        }
+
+        const request = this.packKeyRequest(2, keyCode); // 操作码 2: 按下按键
+        this.socket.write(request);
+
+        const response = await this.receiveMessage();
+        const status = response.readInt32BE(0);
+
+        if (status !== 0) {
+            const errorLength = response.readInt32BE(4);
+            const errorMsg = response.subarray(8, 8 + errorLength).toString();
+            throw new Error(errorMsg);
+        }
+    }
+
+    /**
+     * 释放按键
+     * @param keyCode 按键码
+     */
+    async clearKey(keyCode: number): Promise<void> {
+        if (!this.isConnected) {
+            throw new Error("Not connected to mGBA server");
+        }
+
+        const request = this.packKeyRequest(3, keyCode); // 操作码 3: 释放按键
+        this.socket.write(request);
+
+        const response = await this.receiveMessage();
+        const status = response.readInt32BE(0);
+
+        if (status !== 0) {
+            const errorLength = response.readInt32BE(4);
+            const errorMsg = response.subarray(8, 8 + errorLength).toString();
+            throw new Error(errorMsg);
+        }
+    }
+
+    /**
      * 捕获游戏画面
      * @param screenshotPath 截图保存路径
      * @returns 截图文件的 Buffer 数据
@@ -81,6 +125,21 @@ export class MgbaClient {
             const errorMsg = response.subarray(8, 8 + errorLength).toString();
             throw new Error(errorMsg);
         }
+    }
+
+    /**
+     * 打包按键请求
+     * @param opcode 操作码（2=按下，3=释放）
+     * @param keyCode 按键码
+     * @returns 二进制请求数据
+     */
+    private packKeyRequest(opcode: number, keyCode: number): Buffer {
+        const request = Buffer.alloc(8);
+
+        request.writeInt32BE(opcode, 0); // 操作码
+        request.writeInt32BE(keyCode, 4); // 按键码
+
+        return request;
     }
 
     /**
