@@ -34,6 +34,10 @@ logs
 .env.production
 .env.test
 
+# Configuration files with API keys
+env.dev.yaml
+env.prod.yaml
+
 # Temporary files
 *.tmp
 *.temp

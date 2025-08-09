@@ -17,9 +17,9 @@
     "type": "module",
     "main": "src/main.ts",
     "scripts": {
-        "dev": "tsc && node dist/main.js",
+        "dev": "npm run build && node dist/main.js --config env.dev.yaml",
         "build": "tsc",
-        "start": "tsc && node dist/main.js",
+        "start": "npm run build && node dist/main.js --config env.prod.yaml",
         "lint": "eslint src",
         "lint:fix": "eslint src --fix"
     },
@@ -32,5 +32,9 @@
         "ts-node": "^10.9.2",
         "tsx": "^4.20.3",
         "typescript": "^5.9.2"
+    },
+    "dependencies": {
+        "openai": "^5.12.2",
+        "yaml": "^2.8.1"
     }
 }
