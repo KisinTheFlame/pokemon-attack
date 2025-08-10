@@ -19,6 +19,9 @@ export class LlmClient {
             const response = await this.openai.chat.completions.create({
                 model: this.model,
                 messages: messages,
+                response_format: {
+                    type: "json_object",
+                },
             });
 
             const content = response.choices[0]?.message?.content;
