@@ -107,6 +107,33 @@ local function handleScreenshot(socket, filepath)
     end
 end
 
+-- 客户端错误处理函数
+local function handleClientError(client, err)
+    if err then
+        -- 检查是否是 Socket 对象（包含 mGBA 特有的属性）
+        if type(err) == "table" and err._s and err._callbacks then
+            console:log("Client disconnected (Socket object received in error callback)")
+        else
+            console:error("Client connection error occurred")
+            console:error("Error type: " .. type(err))
+            if type(err) == "table" then
+                -- 遍历 table 内容
+                console:error("Table contents:")
+                for k, v in pairs(err) do
+                    console:error("  " .. tostring(k) .. " = " .. tostring(v))
+                end
+            else
+                console:error("Error details: " .. tostring(err))
+            end
+        end
+    else
+        console:log("Client connection ended")
+    end
+    
+    console:log("Closing client connection.")
+    client:close()
+end
+
 -- 主处理循环
 local function handleConnection(socket)
     local opcode = receiveOpCode(socket)
@@ -143,9 +170,7 @@ local server = nil
 local function startServer(port)
     port = port or 8888
 
-    server = socket.tcp()
-
-    server:bind(nil, port)
+    server = socket.bind(nil, port)
     if not server then
         console:error("Failed to bind to port " .. port)
         return
@@ -177,15 +202,11 @@ local function startServer(port)
                 if not ok then
                     console:error("Error handling connection: " .. tostring(err))
                 end
-
-                console:log("Request processing finished, closing client connection.")
-                client:close()
             end)
 
             -- 错误处理回调
-            client:add("error", function()
-                console:log("Client connection error. Closing.")
-                client:close()
+            client:add("error", function(err)
+                handleClientError(client, err)
             end)
         end
     end)

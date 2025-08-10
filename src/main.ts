@@ -1,6 +1,28 @@
 import { loadConfig } from "./config.js";
 import { LlmClient } from "./llm.js";
-import { GameAgent } from "./game_agent.js";
+import { MultiTurnGameAgent } from "./multi_turn_agent.js";
+
+// 全局错误处理
+process.on("uncaughtException", error => {
+    console.error("\n💥 未捕获的异常:");
+    console.error("错误类型:", error.name);
+    console.error("错误信息:", error.message);
+    console.error("错误堆栈:", error.stack);
+    console.error("\n程序将退出...");
+    process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("\n💥 未处理的 Promise 拒绝:");
+    console.error("Promise:", promise);
+    console.error("原因:", reason);
+    console.error("\n程序将退出...");
+    process.exit(1);
+});
+
+process.on("exit", code => {
+    console.log(`\n👋 程序退出，退出码: ${code.toString()}`);
+});
 
 console.log("🎮 宝可梦 绿宝石 LLM Agent 启动中...");
 
@@ -12,23 +34,12 @@ async function main() {
         const llmClient = new LlmClient(config.llm);
         console.log("🤖 LLM 客户端初始化完成");
         
-        // 初始化游戏 Agent
-        const gameAgent = new GameAgent(llmClient);
-        console.log("🎯 游戏 Agent 初始化完成");
+        // 初始化多轮游戏 Agent
+        const multiTurnAgent = new MultiTurnGameAgent(llmClient, config.agent);
+        console.log("🎯 多轮游戏 Agent 初始化完成");
 
-        console.log("✨ 开始执行一轮游戏对话...");
-        
-        // 执行一轮对话
-        const result = await gameAgent.executeOneTurn();
-        
-        console.log("\n📋 一轮对话结果:");
-        console.log("-------------------");
-        console.log("🔍 画面分析:", result.analysis);
-        console.log("💭 决策思路:", result.thinking);
-        console.log("⌨️  执行按键:", result.action);
-        console.log("-------------------");
-        
-        console.log("🚀 一轮对话执行完成！");
+        // 启动多轮对话
+        await multiTurnAgent.startMultiTurnConversation();
     } catch (error) {
         console.error("❌ 启动失败:", error instanceof Error ? error.message : String(error));
         process.exit(1);

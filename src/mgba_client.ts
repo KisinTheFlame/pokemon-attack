@@ -40,7 +40,7 @@ export class MgbaClient {
      */
     disconnect(): void {
         if (!this.socket.destroyed) {
-            this.socket.destroy();
+            this.socket.end();
         }
         this.isConnected = false;
     }

@@ -7,8 +7,13 @@ export interface LlmConfig {
     model: string;
 }
 
+export interface AgentConfig {
+    history_turns: number;
+}
+
 export interface Config {
     llm: LlmConfig;
+    agent: AgentConfig;
 }
 
 export function loadConfig(): Config {
@@ -24,6 +29,10 @@ export function loadConfig(): Config {
   
     if (!config.llm.api_key || !config.llm.base_url || !config.llm.model) {
         throw new Error("配置文件缺少必要的 LLM 配置项");
+    }
+    
+    if (!config.agent.history_turns || config.agent.history_turns < 1) {
+        throw new Error("配置文件缺少有效的 agent.history_turns 配置项");
     }
   
     return config;
