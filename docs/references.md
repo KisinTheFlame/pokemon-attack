@@ -1,0 +1,1 @@
+- [mGBA 脚本文档](https://mgba.io/docs/scripting.html)
