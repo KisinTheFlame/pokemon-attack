@@ -1,16 +1,18 @@
-import { GameAgent, GameAnalysisResponse, HistoryTurn } from "./game_agent.js";
+import { GameAgent } from "./game_agent.js";
 import { LlmClient } from "./llm.js";
 import { AgentConfig } from "./config.js";
+import { ContextManager } from "./context_manager.js";
 
 
 export class MultiTurnGameAgent {
     private gameAgent: GameAgent;
     private config: AgentConfig;
-    private history: HistoryTurn[] = [];
+    private contextManager: ContextManager;
     private currentTurn = 0;
 
     constructor(llmClient: LlmClient, config: AgentConfig) {
-        this.gameAgent = new GameAgent(llmClient);
+        this.contextManager = new ContextManager(config);
+        this.gameAgent = new GameAgent(llmClient, this.contextManager);
         this.config = config;
     }
 
@@ -48,40 +50,10 @@ export class MultiTurnGameAgent {
      * 执行一轮对话并更新历史记录
      */
     private async executeOneTurnWithHistory(): Promise<void> {
-        // 执行一轮对话，传入历史记录
-        const result = await this.gameAgent.executeOneTurn(this.history);
+        // 执行一轮对话
+        const result = await this.gameAgent.executeOneTurn();
         
         // 添加到历史记录
-        this.addToHistory(result.response, result.imageBase64);
-    }
-
-    /**
-     * 添加记录到历史，并维护历史长度限制
-     */
-    private addToHistory(response: GameAnalysisResponse, imageBase64: string): void {
-        const historyTurn: HistoryTurn = {
-            turnNumber: this.currentTurn,
-            imageBase64,
-            response,
-            timestamp: new Date(),
-        };
-
-        this.history.push(historyTurn);
-
-        // 维护历史长度限制
-        const maxTurns = this.config.history_turns;
-        if (this.history.length > maxTurns) {
-            this.history.shift(); // 移除最老的记录
-        }
-
-        const currentLength = this.history.length;
-        console.log(`💾 历史记录: ${currentLength.toString()}/${maxTurns.toString()} 轮`);
-    }
-
-    /**
-     * 获取当前轮次
-     */
-    getCurrentTurn(): number {
-        return this.currentTurn;
+        this.contextManager.addHistoryTurn(result.imageBase64, result.response);
     }
 }

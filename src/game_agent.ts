@@ -1,7 +1,6 @@
 import { screenshot, pressKey, GbaKey } from "./gba.js";
 import { LlmClient } from "./llm.js";
-import { loadPrompt } from "./prompt.js";
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { ContextManager } from "./context_manager.js";
 
 export interface GameAnalysisResponse {
     analysis: string;
@@ -14,24 +13,20 @@ export interface GameTurnResult {
     imageBase64: string;
 }
 
-export interface HistoryTurn {
-    turnNumber: number;
-    imageBase64: string;
-    response: GameAnalysisResponse;
-    timestamp: Date;
-}
 
 export class GameAgent {
     private llmClient: LlmClient;
+    private contextManager: ContextManager;
 
-    constructor(llmClient: LlmClient) {
+    constructor(llmClient: LlmClient, contextManager: ContextManager) {
         this.llmClient = llmClient;
+        this.contextManager = contextManager;
     }
 
     /**
      * 执行一轮游戏对话：捕获画面 -> LLM分析 -> 执行按键
      */
-    async executeOneTurn(history: HistoryTurn[] = []): Promise<GameTurnResult> {
+    async executeOneTurn(): Promise<GameTurnResult> {
         let imageBuffer: Buffer;
         let base64Image: string;
         
@@ -44,19 +39,10 @@ export class GameAgent {
             throw new Error(`截图失败: ${error instanceof Error ? error.message : String(error)}`);
         }
 
-        let prompt: string;
-        try {
-            console.debug("📄 正在加载 prompt...");
-            prompt = loadPrompt();
-        } catch (error) {
-            console.error("🚨 加载 prompt 失败:");
-            throw new Error(`加载 prompt 失败: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
         let responseString: string;
         try {
             console.debug("🤖 正在分析游戏画面...");
-            const messages = this.buildMessagesWithHistory(prompt, base64Image, history);
+            const messages = this.contextManager.genMessages(base64Image);
             responseString = await this.llmClient.oneTurnChat(messages);
         } catch (error) {
             console.error("🚨 LLM 分析失败:");
@@ -85,7 +71,7 @@ export class GameAgent {
 
         console.log("🎯 分析结果:", response.analysis);
         console.log("💭 决策思路:", response.thinking);
-        console.log("⌨️  执行按键:", response.action);
+        console.log("⌨️ 执行按键:", response.action);
 
         // 执行按键操作
         try {
@@ -110,70 +96,4 @@ export class GameAgent {
         }
     }
 
-    /**
-     * 构建包含历史上下文的消息链
-     */
-    private buildMessagesWithHistory(
-        prompt: string, 
-        currentImage: string, 
-        history: HistoryTurn[],
-    ): ChatCompletionMessageParam[] {
-        const messages: ChatCompletionMessageParam[] = [];
-
-        // 添加系统 prompt（仅第一条消息）
-        messages.push({
-            role: "system",
-            content: [
-                {
-                    type: "text",
-                    text: prompt,
-                },
-            ],
-        });
-
-        // 添加历史对话
-        for (const turn of history) {
-            // 添加历史的用户消息（图像）
-            messages.push({
-                role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: `第 ${turn.turnNumber.toString()} 轮游戏画面:`,
-                    },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: `data:image/png;base64,${turn.imageBase64}`,
-                        },
-                    },
-                ],
-            });
-
-            // 添加历史的助手回应
-            messages.push({
-                role: "assistant",
-                content: JSON.stringify(turn.response),
-            });
-        }
-
-        // 添加当前的用户消息（当前图像）
-        messages.push({
-            role: "user",
-            content: [
-                {
-                    type: "text",
-                    text: "当前游戏画面，请分析并给出下一步操作:",
-                },
-                {
-                    type: "image_url",
-                    image_url: {
-                        url: `data:image/png;base64,${currentImage}`,
-                    },
-                },
-            ],
-        });
-
-        return messages;
-    }
 }
